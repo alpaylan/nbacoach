@@ -1,0 +1,36 @@
+
+Players
+    Last Updated: Date
+    Id: Number || PK
+    Name: String || PK
+    NBA Team: NbaTeam || FK
+    Yahoo Team: Optional<YahooTeam> || FK
+    Stats: Dict
+    Current Position: Enum
+    Eligible/Display Positions: List Enum
+    Active: Bool
+
+NbaTeams:
+    Last Updated: Date
+    Id: Number || PK 
+    Name: String || PK
+    Abbr: String
+    Players: List Player || FK
+
+YahooTeams:
+    Last Updated: Date
+    Name: String || PK
+    Players: List Player || FK
+    
+
+YahooMatchups:
+    Week: Number
+    Team 1: YahooTeam || FK
+    Team 2: YahooTeam || FK
+
+NbaMatchups:
+    Last Updated: Date
+    Date: Date
+    Team 1: NbaTeam || FK
+    Team 2: NbaTeam || FK
+

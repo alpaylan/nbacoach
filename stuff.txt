@@ -1,0 +1,5 @@
+APIs:
+
+- https://rapidapi.com/api-sports/api/api-nba/pricing
+- https://any-api.com/nba_com/nba_com/docs/_allstarballotpredictor
+

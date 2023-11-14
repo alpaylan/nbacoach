@@ -1,0 +1,8 @@
+.vscode
+__pycache__
+auth
+data
+db
+old_stuff
+yahoo-api.py
+.DS_Store
