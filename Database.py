@@ -35,9 +35,9 @@ PLAYER_NAME_FIXER = {
 class Database:
     yahoo_query: YahooFantasySportsQuery
     last_updated: datetime
-    players: list[Player]
-    nba_teams: list[NbaTeam]
-    yahoo_teams: list[YahooTeam]
+    players: dict[str, Player]
+    nba_teams: dict[str, NbaTeam]
+    yahoo_teams: dict[str, YahooTeam]
     yahoo_matchups: list[YahooMatchup]
     nba_matchups: list[NbaMatchup]
 
@@ -75,10 +75,10 @@ class Database:
             self.update()
 
     def update(self) -> None:
-        # self.update_nba_teams()
-        # self.update_nba_matchups()
-        # self.update_yahoo_matchups()
-        # self.update_yahoo_teams()
+        self.update_nba_teams()
+        self.update_nba_matchups()
+        self.update_yahoo_matchups()
+        self.update_yahoo_teams()
         self.update_players()
 
     def update_nba_teams(self) -> None:
@@ -325,3 +325,22 @@ class Database:
                 indent=4,
                 ensure_ascii=False,
             )
+
+    def get_player_by_name(self, name: str) -> Player:
+        try:
+            return self.players[name]
+        except KeyError:
+            raise KeyError(f"Player {name} not found in database.")
+
+    def get_nba_team_by_abbrv(self, name: str) -> NbaTeam:
+        try:
+            return self.nba_teams[name]
+        except KeyError:
+            raise KeyError(f"NBA Team {name} not found in database.")
+        
+
+    def get_yahoo_team_by_name(self, name: str) -> YahooTeam:
+        try:
+            return self.yahoo_teams[name]
+        except KeyError:
+            raise KeyError(f"Yahoo Team {name} not found in database.")
