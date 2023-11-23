@@ -1,10 +1,22 @@
-from datetime import datetime
-from collections import namedtuple
+from Player import Player
+from pydantic import BaseModel
+from functools import reduce
 
-PlayerPosition = namedtuple("PlayerPosition", ["player", "position"])
+class PlayerPosition(BaseModel):
+    name: str # FK (Player)
+    position: str # FK (Position)
 
-class YahooTeam:
-    last_updated: datetime
+class YahooTeam(BaseModel):
     id: int # PK
     name: str # PK
-    players: list[PlayerPosition] # FK (Player, Position)
+    manager: str # PK
+    roster: list[PlayerPosition] # FK (Player, Position)
+    def score(self, db):
+        score = 0
+        for player in self.roster:
+            player : Player = db.get_player_by_name(player.name)
+            if player.current_position == "BN":
+                continue
+            score += player.score()
+        return round(score, 2)
+    

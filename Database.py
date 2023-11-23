@@ -8,7 +8,8 @@ import requests
 from Matchups import NbaMatchup, YahooMatchup
 from NbaTeam import NbaTeam
 from Player import Player
-from YahooTeam import YahooTeam
+from YahooTeam import PlayerPosition, YahooTeam
+from Utils import week2date
 
 import nba_api.stats.endpoints as ep
 from yfpy.query import YahooFantasySportsQuery
@@ -57,22 +58,32 @@ class Database:
 
     """
 
-    def __init__(self, update: bool = False) -> None:
-        self.yahoo_query = YahooFantasySportsQuery(
-            auth_dir,
-            league_id="53545",
-            game_id=GAME_ID,
-            game_code="nba",
-            offline=False,
-            all_output_as_json_str=False,
-            consumer_key=os.environ["YFPY_CONSUMER_KEY"],
-            consumer_secret=os.environ["YFPY_CONSUMER_SECRET"],
-            browser_callback=True,
-        )
-        self.yahoo_query.league_key = "428.l.53545"
+    def __init__(self, update: bool = False, offline: bool = False) -> None:
+        if not offline:
+            self.yahoo_query = YahooFantasySportsQuery(
+                auth_dir,
+                league_id="53545",
+                game_id=GAME_ID,
+                game_code="nba",
+                offline=False,
+                all_output_as_json_str=False,
+                consumer_key=os.environ["YFPY_CONSUMER_KEY"],
+                consumer_secret=os.environ["YFPY_CONSUMER_SECRET"],
+                browser_callback=True,
+            )
+            self.yahoo_query.league_key = "428.l.53545"
 
         if update:
             self.update()
+        
+        self.nba_matchups = [NbaMatchup(**matchup) for matchup in json.load(open(data_dir / "nba_matchups.json"))]
+        self.yahoo_matchups = [YahooMatchup(**(dict({'date': week2date(matchup['week'])}, **matchup))) for matchup in json.load(open(data_dir / "yahoo_matchups.json"))]
+        nba_teams = dict(json.load(open(data_dir / "nba_teams.json")))
+        self.nba_teams = {team['abbreviation']: team for team in nba_teams.values()}
+        yahoo_teams = dict(json.load(open(data_dir / "yahoo_teams.json")))
+        self.yahoo_teams = {team["name"]: YahooTeam(**team) for team in yahoo_teams.values()}
+        players = dict(json.load(open(data_dir / "players.json")))
+        self.players = {player["name"]: Player(**player) for player in players.values()}
 
     def update(self) -> None:
         self.update_nba_teams()
@@ -184,9 +195,11 @@ class Database:
             return get_week(next_tuesday)
 
         yahoo_teams = self.yahoo_query.get_league_teams()
+        print(yahoo_teams)
         yahoo_teams = {
             team.name.decode("utf-8"): {
                 "name": team.name.decode("utf-8"),
+                "manager": team.managers[0].nickname,
                 "id": team.team_id,
                 "roster": list(
                     map(
@@ -282,9 +295,13 @@ class Database:
 
         for player in allplayers:
             print(player.status_full)
-            if player.name.full in players_dict:
+            if player.name.full in players_dict and datetime.now() - datetime.fromisoformat(players_dict[player.name.full]["updated"]) < timedelta(days=1):
+                print("Skipping", player.name.full)
+                print(datetime.fromisoformat(players_dict[player.name.full]["updated"]) - datetime.now())
+                print(datetime.fromisoformat(players_dict[player.name.full]["updated"]))
+                print(datetime.now())
                 continue
-            print(player.name)
+            print("Not skipping", player.name)
 
             name = PLAYER_NAME_FIXER[player.name.full] if player.name.full in PLAYER_NAME_FIXER else player.name.full
 
@@ -344,3 +361,30 @@ class Database:
             return self.yahoo_teams[name]
         except KeyError:
             raise KeyError(f"Yahoo Team {name} not found in database.")
+        
+    def get_yahoo_team_by_manager(self, manager: str) -> YahooTeam:
+        for team in self.yahoo_teams.values():
+            if team.manager == manager:
+                return team
+        raise KeyError(f"Yahoo Team {manager} not found in database.")
+    
+    def update_team(self, team) -> None:
+        pass
+
+    def simulate_trade(self, trade: dict) -> None:
+        t1 = trade["t1"]
+        t2 = trade["t2"]
+
+        for player in t1["players"]:
+            self.yahoo_teams[t1["name"]].roster = list(filter(lambda p: p.name != player, self.yahoo_teams[t1["name"]].roster))
+            self.yahoo_teams[t2["name"]].roster.append(PlayerPosition(**{
+                "name": player,
+                "position": "Util"
+            }))
+
+        for player in t2["players"]:
+            self.yahoo_teams[t2["name"]].roster= list(filter(lambda p: p.name != player, self.yahoo_teams[t2["name"]].roster))
+            self.yahoo_teams[t1["name"]].roster.append(PlayerPosition(**{
+                "name": player,
+                "position": "Util"
+            }))

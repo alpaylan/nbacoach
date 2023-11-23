@@ -1,8 +1,7 @@
 from datetime import datetime
-from dataclasses import dataclass
+from pydantic import BaseModel
 
-@dataclass
-class Matchup:
+class Matchup(BaseModel):
     date: datetime
     home_team: str
     away_team: str

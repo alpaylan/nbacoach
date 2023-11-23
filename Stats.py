@@ -1,42 +1,64 @@
-from dataclasses import dataclass
+from pydantic import BaseModel, Field
 
-def score(stats):
-    if stats['FGA'] is None:
-        return 0
-    return stats['FG%'] * 10 + stats['FT%'] * 10 + stats['3PM'] * 3 + stats['PTS'] + stats['REB'] * 1.2 + stats['AST'] * 1.5 + stats['ST'] * 3 + stats['BLK'] * 3 - stats['TO'] * 1.5
+class Stats(BaseModel):
+    fga: float | None = Field(alias="FGA")
+    fgm: float | None = Field(alias="FGM")
+    fg_pct: float | None = Field(alias="FG%")
+    ftm: float | None = Field(alias="FTM")
+    fta: float | None = Field(alias="FTA")
+    ft_pct: float | None = Field(alias="FT%")
+    threes_made: float | None = Field(alias="3PM")
+    points: float | None = Field(alias="PTS")
+    rebounds: float | None = Field(alias="REB")
+    assists: float | None = Field(alias="AST")
+    steals: float | None = Field(alias="ST")
+    blocks: float | None = Field(alias="BLK")
+    turnovers: float | None = Field(alias="TO")
+    double_doubles: float | None = Field(alias="DD")
 
-@dataclass
-class Stats:
-    fga: float | None = None
-    fgm: float | None = None
-    fg_pct: float | None = None
-    ftm: float | None = None
-    fta: float | None = None
-    ft_pct: float | None = None
-    threes_made: float | None = None
-    points: float | None = None
-    rebounds: float | None = None
-    assists: float | None = None
-    steals: float | None = None
-    blocks: float | None = None
-    turnovers: float | None = None
-    double_doubles: float | None = None
-
-    @staticmethod
-    def from_dict(stat_dict: dict):
-        return Stats(
-            fga=stat_dict.get("FGA", 0),
-            fgm=stat_dict.get("FGM", 0),
-            fg_pct=stat_dict.get("FG%", 0),
-            ftm=stat_dict.get("FTM", 0),
-            fta=stat_dict.get("FTA", 0),
-            ft_pct=stat_dict.get("FT%", 0),
-            threes_made=stat_dict.get("3PM", 0),
-            points=stat_dict.get("PTS", 0),
-            rebounds=stat_dict.get("REB", 0),
-            assists=stat_dict.get("AST", 0),
-            steals=stat_dict.get("ST", 0),
-            blocks=stat_dict.get("BLK", 0),
-            turnovers=stat_dict.get("TO", 0),
-            double_doubles=stat_dict.get("DD", 0),
+    def score(self):
+        if (
+            self.fga is None
+            or self.fgm is None
+            or self.fg_pct is None
+            or self.fta is None
+            or self.ftm is None
+            or self.ft_pct is None
+            or self.threes_made is None
+            or self.points is None
+            or self.rebounds is None
+            or self.assists is None
+            or self.steals is None
+            or self.blocks is None
+            or self.turnovers is None
+        ):
+            return 0
+        return (
+            self.fg_pct * (2 * self.fgm - self.fga)
+            + self.ft_pct * (2 * self.ftm - self.fta)
+            + self.threes_made * 3
+            + self.points * 0.8
+            + self.rebounds * 1.2
+            + self.assists * 1.5
+            + self.steals * 3
+            + self.blocks * 3
+            - self.turnovers * 1.5
         )
+
+
+
+class PlayerStats(BaseModel):
+    season_avg: Stats
+    season_total: Stats
+
+    def score(self):
+        return self.season_avg.score()
+
+    def compare(self, other):
+        results = { "wins": [], "losses": []}
+        for stat in ["fg_pct", "ft_pct", "threes_made", "points", "rebounds", "assists", "steals", "blocks", "turnovers"]:
+            if self.season_avg.__getattribute__(stat) > other.season_avg.__getattribute__(stat):
+                results["wins"].append((stat, round(self.season_avg.__getattribute__(stat) - other.season_avg.__getattribute__(stat), 2)))
+            elif self.season_avg.__getattribute__(stat) < other.season_avg.__getattribute__(stat):
+                results["losses"].append((stat, round(other.season_avg.__getattribute__(stat) - self.season_avg.__getattribute__(stat), 2)))
+        return results

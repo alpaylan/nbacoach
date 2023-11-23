@@ -8,8 +8,9 @@ class Position(Enum):
     C = "C"
     G = "G"
     F = "F"
-    UTIL = "UTIL"
+    UTIL = "Util"
     BN = "BN"
+    Null = None
 
     def __str__(self):
         return self.value
