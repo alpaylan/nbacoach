@@ -47,6 +47,7 @@ class Stats(BaseModel):
 
 
 
+        
 class PlayerStats(BaseModel):
     season_avg: Stats
     season_total: Stats

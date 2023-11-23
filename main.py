@@ -16,9 +16,7 @@ print(f"Jordan({jc.score()}) and Kevin({kh.score()}) vs Brandon({bi.score()})")
 print(f"John({jc2.score()}) and Cam({ct.score()}) vs Brandon({bi.score()})")
 
 print(ct.compare(bi))
-print(bi.compare(ct))
-print(ct.stats.season_avg)
-print(bi.stats.season_avg)
+
 db.simulate_trade({
     "t1": {
         "name": "Yozguard 66'ers",
